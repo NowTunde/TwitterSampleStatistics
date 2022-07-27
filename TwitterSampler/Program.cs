@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using TweetsQueueService;
 using TwitterSampler.Interfaces;
 
 namespace TwitterSampler
@@ -44,7 +45,22 @@ namespace TwitterSampler
 			try
 			{
 				Log.Information("Starting service");
-				await serviceProvider.GetService<ITweetSampleGetter>().Run();
+				//Start the Queue Service
+				var queueClient = serviceProvider.GetService<IQueueClient>();
+				var queueReceiver = serviceProvider.GetService<IQueueReceiver>();
+
+				
+				var tweetSampleGetter = serviceProvider.GetService<ITweetSampleGetter>();
+				if (tweetSampleGetter == null)
+				{
+					Log.Logger.Error("TweetSampleGetter is null. DI of TweetSampleGetter retrieval failed!");
+				}
+				else if(queueReceiver != null)
+				{
+					 await tweetSampleGetter.Run(queueReceiver);
+				}
+				
+				
 				Log.Information("Ending service");
 			}
 			catch (Exception ex)
@@ -70,7 +86,7 @@ namespace TwitterSampler
 
 			// Build configuration
 			Config = new ConfigurationBuilder()
-				.SetBasePath(Directory.GetParent(AppContext.BaseDirectory).FullName)
+				.SetBasePath(Directory.GetParent(AppContext.BaseDirectory)?.FullName)
 				.AddJsonFile("appsettings.json", false)
 				.Build();
 
@@ -78,7 +94,11 @@ namespace TwitterSampler
 			serviceCollection.AddSingleton<IConfigurationRoot>(Config);
 
 			// Add app
-			serviceCollection.AddSingleton<ITweetSampleGetter>(new TweetSampleGetter(Config));
+			var queueClient = new QueueClient(Log.Logger);
+			serviceCollection.AddSingleton<ITweetSampleGetter>(new TweetSampleGetter(Config, Log.Logger, queueClient));
+
+			serviceCollection.AddSingleton<IQueueClient>(queueClient);
+			serviceCollection.AddSingleton<IQueueReceiver>(new QueueReceiver(Log.Logger, Config));
 		}
 	}
 
