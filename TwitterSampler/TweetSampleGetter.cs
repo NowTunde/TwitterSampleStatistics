@@ -70,6 +70,7 @@ namespace TwitterSampler
 
         public Tweet GetFakeTweet()
         {
+            Thread.Sleep(TimeSpan.FromMilliseconds(new Random().Next() % 5000));
             Tweet fakeTweet = new Tweet();
             fakeTweet.TweetMessage = new TweetData
             {
@@ -105,7 +106,7 @@ namespace TwitterSampler
                             _queueClient.Enqueue(tweet);
                         }
 
-                        Thread.Sleep(TimeSpan.FromMilliseconds(new Random().Next() % 1000));
+                        
                         fakeTweet = GetFakeTweet();
                     }
 

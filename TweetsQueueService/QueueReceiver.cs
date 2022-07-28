@@ -2,7 +2,7 @@
 using Serilog;
 using TweetsQueueService.Models;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text.Json;
+using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
 
 namespace TweetsQueueService
@@ -17,6 +17,7 @@ namespace TweetsQueueService
         private const int ReportTimeoutMilliseconds = 500;
         private DateTime _tweetStartTime;
         private static object _lockObj = new object();
+        private static object _lockObj2 = new object();
 
         public QueueReceiver(ILogger logger, IConfigurationRoot configuration)
         {
@@ -36,11 +37,11 @@ namespace TweetsQueueService
                 //DeQueue:
                 var queue = await queueClient.GetQueue();
                 Tweet tweet = new Tweet();
-                DateTime startTime = DateTime.Now;
+                
 
                 _tweetStartTime = queue.Peek().ReceivedTime;
-
-                while(true)
+                DateTime startTime = _tweetStartTime;
+                while (true)
                 {
                     if(queue.Count > 0)
                     {
@@ -53,25 +54,24 @@ namespace TweetsQueueService
                             Thread.Sleep(TimeSpan.FromSeconds(_sleepTime));
                             continue;
 
-                        } else
+                        }
+                        else
                         {
-                            _curTweetsCount += 1;
-                            
+                            lock (_lockObj2)
+                            {
+                                _curTweetsCount += 1;
+
                                 ProcessTweet(tweet, _curTweetsCount);
-                            
-                            
+                            }
                         }
 
                         //Check if we have been processing tweets for a minute otherwise continue:
-                        if(DateTime.Now.Subtract(startTime).TotalSeconds > 60)
+                        if(DateTime.Now.Subtract(startTime).Minutes >= 1)
                         {
-                            PrintReport(_curTweetsCount);
+                            PrintReport();
                             startTime = DateTime.Now;
-                            _curTweetsCount = 0;
                         }
-                    }
-
-                    Thread.Sleep(TimeSpan.FromSeconds(_sleepTime));     
+                    }   
                 }
 
             }
@@ -82,47 +82,37 @@ namespace TweetsQueueService
         }
 
         public void ProcessTweet(Tweet tweet, int curTweetsCount)
-        {
-            try
+        {                        
+            lock(_lockObj)
             {
-                Monitor.TryEnter(_lockObj, ReportTimeoutMilliseconds, ref _lockTaken);
-                if(_lockTaken)
-                {
                     
-                    //calculate mean receival time
-                    //calculate the standard deviation
-                    //Set the count average per minute
-                    //Set the start time
-                    //Set the end time
-                    //Set the total tweets received
-                    _updatedTweetsReport.TotalTweetsRecieved += 1;
-                    _updatedTweetsReport.StartTime = _tweetStartTime;
-                    _updatedTweetsReport.EndTime = tweet.ReceivedTime;
-                    _updatedTweetsReport.AverageTweetPerMinute = tweet.TotalTweetsCount / (tweet.ReceivedTime.Subtract(_tweetStartTime).Minutes + 1);
-
-                    
-                    if(_updatedTweetsReport.TotalTweetsRecieved != tweet.TotalTweetsCount)
-                    {
-                        throw new Exception("Tweet count missmatch");
-                    }
-
-                } else
+                //calculate mean receival time
+                //calculate the standard deviation
+                //Set the count average per minute
+                //Set the start time
+                //Set the end time
+                //Set the total tweets received
+                _updatedTweetsReport.TotalTweetsRecieved += 1;
+                _updatedTweetsReport.StartTime = _tweetStartTime;
+                _updatedTweetsReport.EndTime = tweet.ReceivedTime;
+                if (tweet.ReceivedTime.Subtract(_tweetStartTime).Minutes >= 1)
                 {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(ReportTimeoutMilliseconds));
+                    _updatedTweetsReport.AverageTweetPerMinute = _updatedTweetsReport.TotalTweetsRecieved / (tweet.ReceivedTime.Subtract(_tweetStartTime).Minutes);
+
                 }
-            }
-            finally
-            {
-                if (_lockTaken)
+                if(_updatedTweetsReport.TotalTweetsRecieved != tweet.TotalTweetsCount)
                 {
-                    Monitor.Exit(_lockObj);
+                    throw new Exception("Tweet count missmatch");
                 }
+
             }
+            
         }
 
-        public void PrintReport(int curTweetPerMinute)
+        public void PrintReport()
         {
-
+            var resultOutputAsJson = JsonConvert.SerializeObject(_updatedTweetsReport, Formatting.Indented);
+            System.Diagnostics.Debug.WriteLine(resultOutputAsJson);
         }
     }
 }

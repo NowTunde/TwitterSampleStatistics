@@ -6,6 +6,6 @@ namespace TweetsQueueService
     {
         Task Run(IQueueClient queueClient);
         void ProcessTweet(Tweet tweet, int curTweetsPerMinute);
-        void PrintReport(int curTweetsPerMinute);
+        void PrintReport();
     }
 }
