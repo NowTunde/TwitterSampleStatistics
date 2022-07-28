@@ -18,23 +18,21 @@ namespace TwitterSampler
         private readonly string _bearerToken;
         private int _tweetCount;
         private readonly IQueueClient _queueClient;
-
-        public TweetSampleGetter(IConfiguration config, ILogger logger, IQueueClient queueClient)
+        private readonly HttpClient _client;
+        public TweetSampleGetter(IConfiguration config, ILogger logger, IQueueClient queueClient, IHttpClientFactory client)
         {
             _url = config.GetSection("TwiterSampleStreamUrl")?.Value ?? String.Empty;
             _bearerToken = config.GetSection("BearerToken")?.Value ?? String.Empty;
 
             _logger = logger;
             _queueClient = queueClient;
+            _client = client.CreateClient();
         }
 
         public  async Task GetTweets()
         {
             try
-            {
-                using var _client = new HttpClient();
-
-
+            {             
                 _client.DefaultRequestHeaders.Authorization =
     new AuthenticationHeaderValue("Bearer", _bearerToken);
                 _client.Timeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
@@ -67,55 +65,56 @@ namespace TwitterSampler
             return;
         }
 
-        public Tweet GetFakeTweet()
-        {
-            Thread.Sleep(TimeSpan.FromMilliseconds(new Random().Next() % 5000));
-            Tweet fakeTweet = new Tweet();
+        //public Tweet GetFakeTweet()
+        //{
+        //    Thread.Sleep(TimeSpan.FromMilliseconds(new Random().Next() % 5000));
+        //    Tweet fakeTweet = new Tweet();
             
-            var tweetString = "{\"data\":{\"id\":\"1552660616447512577\",\"text\":\"@xo0mi what makes a fitna dangerous. Its that people in huge number buy what the fitna is saying. Same is the case with imran. He is a dajjal's rep and most lethal fitna Pakistan ever had.\"}}";
+        //    var tweetString = "{\"data\":{\"id\":\"1552660616447512577\",\"text\":\"@xo0mi what makes a fitna dangerous. Its that people in huge number buy what the fitna is saying. Same is the case with imran. He is a dajjal's rep and most lethal fitna Pakistan ever had.\"}}";
 
-            fakeTweet.TweetMessage = 
-                JsonSerializer.Deserialize<TweetData>(tweetString);
-            return fakeTweet;
-        }
+        //    fakeTweet.TweetMessage = 
+        //        JsonSerializer.Deserialize<TweetData>(tweetString);
+        //    return fakeTweet;
+        //}
 
-        //ToDo - Delete and Replace with connect good
-        public async Task GetTweetsFake()
-        {
-            try
-            {
-                _logger.Information("TweetSampleGetter Started Successfully!");
-                var fakeTweet = new Tweet();
+        ////ToDo - Delete and Replace with connect good
+        //public async Task GetTweetsFake()
+        //{
+        //    try
+        //    {
+        //        _logger.Information("TweetSampleGetter Started Successfully!");
+        //        var fakeTweet = new Tweet();
 
-             await   Task.Run(() =>
-                {
-                    while (fakeTweet != null)
-                    {
+        //     await   Task.Run(() =>
+        //        {
+        //            while (fakeTweet != null)
+        //            {
 
-                        if (!string.IsNullOrEmpty(fakeTweet?.TweetMessage?.Data?.Text))
-                        {
-                            var tweet = new Tweet();
-                            _tweetCount += 1;
-                            tweet.TotalTweetsCount = _tweetCount;
-                            tweet.ReceivedTime = DateTime.Now;
-                            tweet.TweetMessage = fakeTweet.TweetMessage;
+        //                if (!string.IsNullOrEmpty(fakeTweet?.TweetMessage?.Data?.Text))
+        //                {
+        //                    var tweet = new Tweet();
+        //                    _tweetCount += 1;
+        //                    tweet.TotalTweetsCount = _tweetCount;
+        //                    tweet.ReceivedTime = DateTime.Now;
+        //                    tweet.TweetMessage = fakeTweet.TweetMessage;
 
-                            //Queue the tweet for processing and reporting
-                            _queueClient.Enqueue(tweet);
-                        }
+        //                    //Queue the tweet for processing and reporting
+        //                    _queueClient.Enqueue(tweet);
+        //                }
 
                         
-                        fakeTweet = GetFakeTweet();
-                    }
+        //                fakeTweet = GetFakeTweet();
+        //            }
 
-                });
-            }
-            catch (Exception exp)
-            {
-                _logger.Error(exp.Message);
-            }
-            return;
-        }
+        //        });
+        //    }
+        //    catch (Exception exp)
+        //    {
+        //        _logger.Error(exp.Message);
+        //    }
+        //    return;
+        //}
+       
         public Task GetTweetStreamSample()
         {
             throw new NotImplementedException();

@@ -90,15 +90,24 @@ namespace TwitterSampler
 				.AddJsonFile("appsettings.json", false)
 				.Build();
 
+			var url = Config.GetSection("TwiterSampleStreamUrl")?.Value ?? String.Empty;
+
 			// Add access to generic IConfigurationRoot
 			serviceCollection.AddSingleton<IConfigurationRoot>(Config);
-
+			serviceCollection.AddHttpClient("TweetSampleGetter", client => client.BaseAddress = new Uri(url));
 			// Add app
 			var queueClient = new QueueClient(Log.Logger);
-			serviceCollection.AddSingleton<ITweetSampleGetter>(new TweetSampleGetter(Config, Log.Logger, queueClient));
-
 			serviceCollection.AddSingleton<IQueueClient>(queueClient);
-			serviceCollection.AddSingleton<IQueueReceiver>(new QueueReceiver(Log.Logger, Config));
+
+			var queueReceiver = new QueueReceiver(Log.Logger, Config);
+			serviceCollection.AddSingleton<IQueueReceiver>(queueReceiver);
+
+			var client = serviceCollection.BuildServiceProvider().GetService<IHttpClientFactory>();
+			var tweetSampleGetter = new TweetSampleGetter(Config, Log.Logger, queueClient, client);
+			serviceCollection.AddSingleton<ITweetSampleGetter>(tweetSampleGetter);
+
+			
+			
 		}
 	}
 

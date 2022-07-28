@@ -30,7 +30,7 @@ namespace TweetsQueueService
             _tweetsPerMinute = new List<int>();
         }
 
-        public async Task Run(IQueueClient queueClient)
+        public async Task Run(IQueueClient queueClient, bool testMode = false)
         {
             try
             {
@@ -73,7 +73,12 @@ namespace TweetsQueueService
                             _cycleStartTime = tweet.ReceivedTime;
                             _curTweetsCount = 0;
                         }
-                    }   
+                    }
+
+                    if (testMode)
+                    {
+                        break;
+                    }
                 }
 
             }
