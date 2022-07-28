@@ -1,13 +1,14 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace TwitterSampler.Models
 {
-    public class TweetData
+    public class TweetData 
     {
-        [Key]
-        public long Id { get; set; }
-        public string? Text { get; set; }
+        
+        [JsonPropertyName("data")]
+        public TweetContent? Data { get; set; }
     }
 }
 

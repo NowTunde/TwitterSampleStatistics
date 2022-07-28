@@ -7,7 +7,7 @@ namespace TweetsQueueService.Models
         public DateTime EndTime { get; set; }
         public int TotalTweetsRecieved { get; set; }
         public float AverageTweetPerMinute { get; set; }
-        public float StandardDeviation { get; set; }
+        public double StandardDeviation { get; set; }
     }
 }
 
