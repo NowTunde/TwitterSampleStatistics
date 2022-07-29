@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using TweetsQueueService;
 using TwitterSampler.Interfaces;
 
 namespace TwitterSampler
@@ -9,10 +10,8 @@ namespace TwitterSampler
 
 	public class Program
 	{
-
 		public static IConfigurationRoot? Config;
-		// See https://aka.ms/new-console-template for more information
-
+		
 		public static void Main(string[] args)
 		{
 			Log.Logger = new LoggerConfiguration()
@@ -44,7 +43,22 @@ namespace TwitterSampler
 			try
 			{
 				Log.Information("Starting service");
-				await serviceProvider.GetService<ITweetSampleGetter>().Run();
+				//Start the Queue Service
+				var queueClient = serviceProvider.GetService<IQueueClient>();
+				var queueReceiver = serviceProvider.GetService<IQueueReceiver>();
+
+				
+				var tweetSampleGetter = serviceProvider.GetService<ITweetSampleGetter>();
+				if (tweetSampleGetter == null)
+				{
+					Log.Logger.Error("TweetSampleGetter is null. DI of TweetSampleGetter retrieval failed!");
+				}
+				else if(queueReceiver != null)
+				{
+					 await tweetSampleGetter.Run(queueReceiver);
+				}
+				
+				
 				Log.Information("Ending service");
 			}
 			catch (Exception ex)
@@ -70,15 +84,25 @@ namespace TwitterSampler
 
 			// Build configuration
 			Config = new ConfigurationBuilder()
-				.SetBasePath(Directory.GetParent(AppContext.BaseDirectory).FullName)
+				.SetBasePath(Directory.GetParent(AppContext.BaseDirectory)?.FullName)
 				.AddJsonFile("appsettings.json", false)
 				.Build();
 
+			var url = Config.GetSection("TwiterSampleStreamUrl")?.Value ?? String.Empty;
+
 			// Add access to generic IConfigurationRoot
 			serviceCollection.AddSingleton<IConfigurationRoot>(Config);
-
+			serviceCollection.AddHttpClient("TweetSampleGetter", client => client.BaseAddress = new Uri(url));
 			// Add app
-			serviceCollection.AddSingleton<ITweetSampleGetter>(new TweetSampleGetter(Config));
+			var queueClient = new QueueClient(Log.Logger);
+			serviceCollection.AddSingleton<IQueueClient>(queueClient);
+
+			var queueReceiver = new QueueReceiver(Log.Logger, Config);
+			serviceCollection.AddSingleton<IQueueReceiver>(queueReceiver);
+
+			var client = serviceCollection.BuildServiceProvider().GetService<IHttpClientFactory>();
+			var tweetSampleGetter = new TweetSampleGetter(Config, Log.Logger, queueClient, client);
+			serviceCollection.AddSingleton<ITweetSampleGetter>(tweetSampleGetter);			
 		}
 	}
 

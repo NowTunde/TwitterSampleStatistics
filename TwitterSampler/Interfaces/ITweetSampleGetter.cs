@@ -1,12 +1,14 @@
 ﻿using System;
+using TweetsQueueService;
+
 namespace TwitterSampler.Interfaces
 {
     public interface ITweetSampleGetter
     {
-        Task Connect();
+        Task GetTweets();
         Task SetQueries();
         Task GetTweetStreamSample();
-        Task Run();
+        Task Run(IQueueReceiver client);
     }
 }
 
