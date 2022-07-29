@@ -10,10 +10,8 @@ namespace TwitterSampler
 
 	public class Program
 	{
-
 		public static IConfigurationRoot? Config;
-		// See https://aka.ms/new-console-template for more information
-
+		
 		public static void Main(string[] args)
 		{
 			Log.Logger = new LoggerConfiguration()
@@ -104,10 +102,7 @@ namespace TwitterSampler
 
 			var client = serviceCollection.BuildServiceProvider().GetService<IHttpClientFactory>();
 			var tweetSampleGetter = new TweetSampleGetter(Config, Log.Logger, queueClient, client);
-			serviceCollection.AddSingleton<ITweetSampleGetter>(tweetSampleGetter);
-
-			
-			
+			serviceCollection.AddSingleton<ITweetSampleGetter>(tweetSampleGetter);			
 		}
 	}
 

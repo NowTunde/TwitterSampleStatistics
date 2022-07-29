@@ -16,7 +16,6 @@ namespace TweetsQueueService
         {
             _logger = logger;
             _tweetQueue = new Queue<Tweet>();
-
         }
 
         public void Enqueue(Object tweetObj)
@@ -43,11 +42,8 @@ namespace TweetsQueueService
             {
                 while (_tweetQueue.Count == 0)
                 {
-
-
                     Thread.Sleep(TimeSpan.FromMilliseconds(1000));
                 }
-
             });
         }
     }

@@ -1,10 +1,7 @@
-﻿using System;
-using System.Net;
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using TwitterSampler.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-//using Newtonsoft.Json;
 using System.Text.Json;
 using TwitterSampler.Models;
 using TweetsQueueService;
@@ -26,7 +23,8 @@ namespace TwitterSampler
 
             _logger = logger;
             _queueClient = queueClient;
-            _client = client.CreateClient();
+
+            _client = client.CreateClient();          
         }
 
         public  async Task GetTweets()
@@ -64,57 +62,7 @@ namespace TwitterSampler
             }
             return;
         }
-
-        //public Tweet GetFakeTweet()
-        //{
-        //    Thread.Sleep(TimeSpan.FromMilliseconds(new Random().Next() % 5000));
-        //    Tweet fakeTweet = new Tweet();
-            
-        //    var tweetString = "{\"data\":{\"id\":\"1552660616447512577\",\"text\":\"@xo0mi what makes a fitna dangerous. Its that people in huge number buy what the fitna is saying. Same is the case with imran. He is a dajjal's rep and most lethal fitna Pakistan ever had.\"}}";
-
-        //    fakeTweet.TweetMessage = 
-        //        JsonSerializer.Deserialize<TweetData>(tweetString);
-        //    return fakeTweet;
-        //}
-
-        ////ToDo - Delete and Replace with connect good
-        //public async Task GetTweetsFake()
-        //{
-        //    try
-        //    {
-        //        _logger.Information("TweetSampleGetter Started Successfully!");
-        //        var fakeTweet = new Tweet();
-
-        //     await   Task.Run(() =>
-        //        {
-        //            while (fakeTweet != null)
-        //            {
-
-        //                if (!string.IsNullOrEmpty(fakeTweet?.TweetMessage?.Data?.Text))
-        //                {
-        //                    var tweet = new Tweet();
-        //                    _tweetCount += 1;
-        //                    tweet.TotalTweetsCount = _tweetCount;
-        //                    tweet.ReceivedTime = DateTime.Now;
-        //                    tweet.TweetMessage = fakeTweet.TweetMessage;
-
-        //                    //Queue the tweet for processing and reporting
-        //                    _queueClient.Enqueue(tweet);
-        //                }
-
-                        
-        //                fakeTweet = GetFakeTweet();
-        //            }
-
-        //        });
-        //    }
-        //    catch (Exception exp)
-        //    {
-        //        _logger.Error(exp.Message);
-        //    }
-        //    return;
-        //}
-       
+  
         public Task GetTweetStreamSample()
         {
             throw new NotImplementedException();
@@ -136,10 +84,8 @@ namespace TwitterSampler
             else
             {
                 await Task.WhenAll(GetTweets(), queueReceiver.Run(_queueClient));
-                //await queueReceiver.Run(_queueClient);
             }
-            
-
+           
             return;
         }
     }
